@@ -2,10 +2,11 @@ import { useState } from "react";
 
 const CounterButton = () => {
   //let counter = 0;
-  const counterState = useState(0);
+  //const counterState = useState(0);
+  const [counter, setCounter] = useState(0);
 
-  const counter = counterState[0];
-  const setCounter = counterState[1];
+  // const counter = counterState[0];
+  // const setCounter = counterState[1];
 
   const handleClickIncrement = () => {
     const newValue = counter + 1;

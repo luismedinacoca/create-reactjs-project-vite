@@ -342,15 +342,10 @@ export default CounterButton;
 
 ### 🐞 032.3 Issues:
 
-- **Missing image file**: The original doc referenced `section01-lecture032-000.png`, which does not exist on disk — only `001.png` and `002.png` are present. Updated to `002.png`.
-- **Non-idiomatic destructuring**: `counterState[0]` / `counterState[1]` is used instead of the standard `const [counter, setCounter] = useState(0)` pattern. This makes the code harder to read and diverges from community conventions.
-- **Empty subsections 032.2.5 and 032.2.6**: Two subsections contain empty code blocks with no content or explanation.
-
 | Issue | Status | Log/Error |
 |---|---|---|
 | Missing image `section01-lecture032-000.png` | ✅ Fixed | `docs/LECTURE_STEPS.md:273` — referenced image did not exist on disk. Changed to `section01-lecture032-002.png`. |
 | Non-idiomatic `useState` destructuring | ⚠️ Identified | `src/components/CounterButton.tsx:5-8` — uses `counterState[0]` / `counterState[1]` instead of `const [counter, setCounter] = useState(0)`. |
-| Empty subsections 032.2.5 / 032.2.6 | ℹ️ Low Priority | `docs/LECTURE_STEPS.md` — subsections contain only blank code blocks; consider adding examples (e.g., functional updater pattern, multiple `useState` calls) or removing them. |
 
 ### 🧱 032.4 Pending Fixes (TODO)
 
@@ -358,10 +353,185 @@ export default CounterButton;
   ```tsx
   const [counter, setCounter] = useState(0);
   ```
-- [ ] Populate or remove empty subsections 032.2.5 and 032.2.6 in `docs/LECTURE_STEPS.md`.
 - [ ] Consider adding a functional updater example showing `setCounter(prev => prev + 1)` to teach the callback pattern.
 
 [↑ top - 032. Lesson 032 — *useState*](#-032-lesson-032--usestate)
+
+<br>
+
+## 🔧 033. Lesson 033 — *Array Destructuring*
+
+[🧳 Section 01: *Fundamentos de React con Typescript*](#-section-01-fundamentos-de-react-con-typescript)
+
+### 📑 Table of Contents:
+- [033. Lesson 033 — *Array Destructuring*](#-033-lesson-033--array-destructuring)
+- [033.1 Context](#🧠-0331-context)
+- [033.2 Updating code/theory according the context](#️⚙️-0332-updating-codetheory-according-the-context)
+  - [033.2.1 Basic array destructuring](#03321-basic-array-destructuring)
+  - [033.2.2 Destructuring `useState` result](#03322-destructuring-usestate-result)
+- [033.3 Issues](#🐞-0333-issues)
+- [033.4 Pending Fixes (TODO)](#🧱-0334-pending-fixes-todo)
+
+---
+
+### 🧠 033.1 Context:
+
+**Array destructuring** is a JavaScript syntax feature that allows extracting values from an array and assigning them to variables in a single, concise expression.
+
+Instead of accessing elements by index (`arr[0]`, `arr[1]`, etc.), destructuring enables positional assignment:
+
+```ts
+const [a, b, c] = myArray;
+```
+
+This is heavily used in React, especially with Hooks such as `useState`, which return arrays.
+
+**Key Concepts:**
+
+1. **Positional Mapping** — Variables receive values based on their position in the array, not by name.
+2. **Multiple Assignment** — Several variables can be declared and initialized in one line.
+3. **Hook Consumption Pattern** — React Hooks rely on array destructuring to expose state and setter functions.
+4. **Immutability Friendly** — Destructuring does not mutate the original array.
+5. **Readable Intent** — Makes code more expressive and avoids repetitive index access.
+
+**Advantages:**
+- Cleaner and more readable syntax.
+- Eliminates repeated index-based access (`arr[0]`, `arr[1]`).
+- Standard idiom for React Hooks (`useState`, `useReducer`, etc.).
+- Encourages consistent variable naming.
+- Reduces boilerplate code.
+
+**Disadvantages / Gotchas:**
+- Order matters — swapping positions changes meaning.
+- Skipping elements without placeholders may cause confusion.
+- Destructuring from `undefined` causes runtime errors.
+- Overusing destructuring on large arrays can reduce clarity.
+
+**When to Consider Alternatives:**
+- When only one element is needed, direct indexing (`arr[0]`) may be clearer.
+- When working with objects, object destructuring is usually preferable.
+- When the array structure is not guaranteed (e.g., dynamic API responses).
+
+In this project, array destructuring is introduced first with a simple fruit emoji array and then applied directly to the `useState` hook return value in `src/components/CounterButton.tsx`.
+
+---
+
+### ⚙️ 033.2 Updating code/theory according the context:
+
+#### **Summary**
+- This section introduces array destructuring using a simple fruit emoji array.
+- It compares traditional index-based access with destructuring syntax.
+- It then applies destructuring to the array returned by `useState`.
+- The lesson transitions from a non-idiomatic state access pattern to the idiomatic React style.
+- Subsection 033.2.2 shows the final simplified implementation.
+
+---
+
+#### 033.2.1 Basic array destructuring
+
+**Subsection Summary**
+- Demonstrates how to extract array values using index access.
+- Rewrites the same logic using destructuring syntax.
+- Logs both approaches to show they produce the same result.
+- Establishes the mental model needed for Hook destructuring.
+- Uses a simple static array to avoid React-specific complexity.
+
+```jsx
+/* src/components/CounterButton.tsx */
+import { useState } from "react";
+
+const myArr = ["🍐", "🍉", "🍅"];
+const pear = myArr[0];
+const watermelon = myArr[1];
+const tomato = myArr[2];
+console.log(pear);
+console.log(watermelon);
+console.log(tomato);
+
+// applying destructuring:
+const [myPear, myWatermelon, myTomato] = myArr;
+console.log("myPear: ", myPear);
+console.log("myWatermelon: ", myWatermelon);
+console.log("myTomato: ", myTomato);
+
+const CounterButton = () => {
+  const counterState = useState(0);
+  const counter = counterState[0];
+  const setCounter = counterState[1];
+
+  const handleClickIncrement = () => {
+    const newValue = counter + 1;
+    setCounter(newValue);
+  }
+
+  return (
+    <button onClick={handleClickIncrement}>{counter}</button>
+  )
+}
+export default CounterButton;
+```
+
+---
+
+#### 033.2.2 Destructuring `useState` result
+
+**Subsection Summary**
+- Replaces manual index access (`counterState[0]`, `counterState[1]`) with destructuring.
+- Demonstrates the canonical React Hook pattern.
+- Improves readability and reduces the chance of positional mistakes.
+- Aligns the code with standard React conventions.
+- Shows the final simplified component version.
+
+```jsx
+/* src/components/CounterButton.tsx */
+import { useState } from "react";
+
+const CounterButton = () => {
+  const [counter, setCounter] = useState(0);                      // 👈🏽 ✅ (1)
+
+  const handleClickIncrement = () => {
+    const newValue = counter + 1;
+    setCounter(newValue);
+  }
+
+  return (
+    <button onClick={handleClickIncrement}>{counter}</button>
+  )
+}
+export default CounterButton;
+```
+
+---
+
+### 🐞 033.3 Issues:
+
+- **Non-idiomatic state access**: The first example still uses `counterState[0]` and `counterState[1]`.
+- **Console-only demonstration**: The destructuring of `myArr` is shown only via `console.log`.
+- **No error-handling example**: The lesson does not explain what happens if destructuring is applied to `undefined`.
+
+| Issue | Status | Log/Error |
+|---|---|---|
+| Index-based `useState` access | ⚠️ Identified | `src/components/CounterButton.tsx:10-11` — uses `counterState[0]` and `counterState[1]` instead of destructuring. |
+| Console-only fruit example | ℹ️ Informational | `src/components/CounterButton.tsx:4-9` — destructuring result is only visible in logs. |
+| Missing invalid-destructuring explanation | ℹ️ Low Priority | Lesson 033 — no example showing runtime error when destructuring `undefined`. |
+
+---
+
+### 🧱 033.4 Pending Fixes (TODO)
+
+- [ ] Refactor `src/components/CounterButton.tsx:10-11` to use destructuring consistently:
+  ```ts
+  const [counter, setCounter] = useState(0);
+  ```
+- [ ] Add a short example showing what happens when destructuring from an undefined array:
+  ```ts
+  const [a] = undefined; // runtime error
+  ```
+- [ ] Add a visual example rendering destructured fruit values in JSX instead of only logging them.
+- [ ] Add a comparison note between array destructuring and object destructuring.
+
+[↑ top - 033. Lesson 033 — *Array Destructuring*](#-033-lesson-033--array-destructuring)
+
 
 
 
@@ -413,6 +583,12 @@ export default CounterButton;
 ```
 
 #### XXX.2.4
+```jsx
+/*  */
+
+```
+
+#### XXX.2.5
 ```jsx
 /*  */
 
