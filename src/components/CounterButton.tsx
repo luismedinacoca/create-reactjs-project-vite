@@ -1,19 +1,18 @@
-import { useState } from "react";
+// import { useState } from "react";
 
-const CounterButton = () => {
-  //let counter = 0;
-  //const counterState = useState(0);
-  const [counter, setCounter] = useState(0);
+interface Props {
+  counter: number
+  handleClickIncrement: () => void
+}
 
-  // const counter = counterState[0];
-  // const setCounter = counterState[1];
+const CounterButton = ({ counter, handleClickIncrement }: Props) => {
+  //const [counter, setCounter] = useState(0);
 
-  const handleClickIncrement = () => {
-    const newValue = counter + 1;
-    setCounter(newValue);
-    //counter = counter + 1;
-    //console.log("counter: ", newValue);
-  }
+  // const handleClickIncrement = () => {
+  //   const newValue = counter + 1;
+  //   setCounter(newValue);
+  // }
+
   return (
     <button onClick={handleClickIncrement}>{counter}</button>
   )

@@ -534,6 +534,211 @@ export default CounterButton;
 
 
 
+<br>
+
+## 🔧 034. Lesson 034 — *Sharing state between Components*
+
+[🧳 Section 01: *Fundamentos de React con Typescript*](#-section-01-fundamentos-de-react-con-typescript)
+
+### 📑 Table of Contents:
+- [034. Lesson 034 — *Sharing state between Components*](#-034-lesson-034--sharing-state-between-components)
+- [034.1 Context](#-0341-context)
+- [034.2 Updating code/theory according the context](#️-0342-updating-codetheory-according-the-context)
+  - [034.2.1 Multiple components with independent state](#-03421-multiple-components-with-independent-state)
+  - [034.2.2 Lifting state up — shared state in parent](#-03422-lifting-state-up--shared-state-in-parent)
+  - [034.2.3 Typed Props interface for CounterButton](#-03423-typed-props-interface-for-counterbutton)
+- [034.3 Issues](#-0343-issues)
+- [034.4 Pending Fixes (TODO)](#-0344-pending-fixes-todo)
+
+### 🧠 034.1 Context:
+
+**Sharing state between components** is a fundamental pattern in React where multiple components need to read or update the same piece of data. React's one-way data flow means state lives in a component and is passed down to children via **props**. When several siblings must share state, the solution is to **lift state up** — move the state into their common parent.
+
+**Key Concepts:**
+
+1. **Lifting State Up** — When two or more components need access to the same state, move the `useState` call from the child into the **closest common ancestor**. The parent owns the state and passes it down as props.
+2. **Single Source of Truth** — Keeping state in one place avoids sync issues. Multiple components read the same `counter` value because they all receive it from the parent.
+3. **Props for Data and Callbacks** — Parent passes both the state value (`counter`) and an updater function (`handleClickIncrement`) as props. Children call the callback to request updates; the parent performs the update.
+4. **Controlled vs. Uncontrolled** — A component that receives its value and onChange-style handler from props is **controlled**; it has no local state for that value.
+5. **Rules of Hooks** — Hooks must be called unconditionally at the top level of a component. Lifting state up ensures each component that needs a hook owns it correctly.
+
+**Advantages:**
+
+- Single source of truth — no risk of conflicting copies of state.
+- Predictable data flow — data flows down, events bubble up.
+- Easier debugging — state lives in one component.
+- Reusable presentational components — children stay dumb/stateless.
+- Straightforward to reason about and test.
+
+**Disadvantages / Gotchas:**
+
+- Prop drilling — many layers of components passing props down.
+- Parent re-renders can cascade — lifting state higher can cause more re-renders.
+- Callback props add boilerplate — each child needs both value and setter.
+- Over-lifting can bloat the parent — too much logic in one place.
+
+**When to Consider Alternatives:**
+
+- **Prop drilling** across many levels → Context API, Zustand, or Jotai.
+- **Complex or deeply nested state** → `useReducer` or external store.
+- **Server state, caching, or async** → React Query, SWR, or similar.
+- **Form state across fields** → dedicated form libraries (React Hook Form, Formik).
+
+In this project, state sharing is shown by moving `counter` and `handleClickIncrement` from `CounterButton` into `App.tsx`. Both buttons render the same value and update the same state (034.2.1 → 034.2.3).
+
+### ⚙️ 034.2 Updating code/theory according the context:
+
+#### **Summary**
+- This section teaches how to share state between multiple instances of the same component.
+- Subsection 034.2.1 shows multiple `CounterButton` components, each with its own independent state — three separate counters.
+- Subsection 034.2.2 **lifts state up** into `App`: the parent holds `useState`, and both buttons receive `counter` and `handleClickIncrement` as props. Both buttons now share a single counter value.
+- Subsection 034.2.3 adds a TypeScript `Props` interface so `CounterButton` receives correctly typed props.
+- Subsections 034.2.4 and 034.2.5 are reserved / empty.
+
+#### 034.2.1 Multiple components with independent state
+
+**Subsection Summary**
+- Renders three `CounterButton` components from `App.tsx`.
+- Each `CounterButton` owns its own `useState` internally, so each counter is independent.
+- The screenshot (`section01-lecture034-001.png`) illustrates the three separate counters.
+- Reinforces the Rules of Hooks: Hooks must be called at the top level, not inside loops or conditions.
+
+```jsx
+/* src/App.tsx */
+import "./App.css";
+import CounterButton from "./components/CounterButton";
+
+function App() {
+  return (
+    <>
+      <h1>useState</h1>
+      <CounterButton /> {" "}
+      <CounterButton /> {" "}
+      <CounterButton />
+    </>
+  );
+}
+
+export default App;
+```
+
+* Having more than one `component`.
+* Each `component` has a `state`.
+* The `state` is independent in each `component`.
+
+![independent state for component](../img/section01-lecture034-001.png)
+
+* ***Only call Hooks at the top level. Don’t call Hooks inside loops, conditions, or nested functions.***
+
+#### 034.2.2 Lifting state up — shared state in parent
+
+**Subsection Summary**
+- Moves `useState` and `handleClickIncrement` from `CounterButton` into `App`.
+- Both `CounterButton` instances receive `counter` and `handleClickIncrement` as props.
+- The child becomes a controlled component: it displays `counter` and calls the parent's handler on click.
+- Introduces props as the mechanism for sharing data and event handlers between components.
+
+```jsx
+/* src/App.tsx */
+import { useState } from "react";
+import "./App.css";
+import CounterButton from "./components/CounterButton";
+
+function App() {
+  const [counter, setCounter] = useState(0);
+  const handleClickIncrement = () => {
+    const newValue = counter + 1;
+    setCounter(newValue);
+  };
+  return (
+    <>
+      <h1>useState</h1>
+      <CounterButton
+        counter={counter}
+        handleClickIncrement={handleClickIncrement} 
+      /> {" "}
+      <CounterButton counter={counter}
+        handleClickIncrement={handleClickIncrement} 
+      />
+    </>
+  );
+}
+export default App;
+```
+
+meantime:
+
+```tsx
+/* src/components/CounterButton.tsx */
+// import { useState } from "react";
+
+const CounterButton = ({ counter, handleClickIncrement }) => {
+  //const [counter, setCounter] = useState(0);
+  // const handleClickIncrement = () => {
+  //   const newValue = counter + 1;
+  //   setCounter(newValue);
+  // }
+  return (
+    <button onClick={handleClickIncrement}>{counter}</button>
+  )
+}
+export default CounterButton;
+```
+
+Issues:
+* Props don't have type.
+
+---
+
+**Sharing data between components:**
+```
+Props (properties) are the way React components can receive data from their parents. You can think of them as attributes of an HTML element, but in React they are much more powerful because they can be any type of data: strings, numbers, objects, functions, etc.
+```
+
+#### 034.2.3 Typed Props interface for CounterButton
+
+**Subsection Summary**
+- Adds a TypeScript `Props` interface with `counter: number` and `handleClickIncrement: () => void`.
+- Destructures and types the props in the component signature.
+- Fixes the typeless-props issue from 034.2.2 and aligns with TypeScript best practices.
+- The screenshot (`section01-lecture034-002.png`) shows the shared counter working with both buttons.
+
+```jsx
+/* src/components/CounterButton.tsx */
+interface Props {
+  counter: number
+  handleClickIncrement: () => void
+}
+const CounterButton = ({ counter, handleClickIncrement }: Props) => {
+  return (
+    <button onClick={handleClickIncrement}>{counter}</button>
+  )
+}
+export default CounterButton;
+```
+
+![components sharing state](../img/section01-lecture034-002.png)
+
+### 🐞 034.3 Issues:
+
+- **Typo in documentation**: The lesson text uses "do't" instead of "don't" when referring to props typing (corrected in 034.2.2).
+- **Commented code in component**: `CounterButton.tsx` contains commented-out `useState` and handler code that can be removed for clarity.
+- **Inconsistent button count**: `App.tsx` shows two `CounterButton` instances after lifting state, while 034.2.1 shows three — the third button was dropped without explanation.
+
+| Issue | Status | Log/Error |
+|---|---|---|
+| Typo "do't" → "don't" | ✅ Fixed | `docs/LECTURE_STEPS.md` — corrected to "Props don't have type" in subsection 034.2.2. |
+| Commented-out code in CounterButton | ⚠️ Identified | `src/components/CounterButton.tsx:1, 9-14` — commented `useState` and handler remain from refactor; can be removed. |
+| Inconsistent button count (3 vs 2) | ℹ️ Informational | `src/App.tsx` — 034.2.1 shows three counters; 034.2.2/034.2.3 show two. Either add a third or document the intentional reduction. |
+
+### 🧱 034.4 Pending Fixes (TODO)
+
+- [ ] Remove commented-out code from `src/components/CounterButton.tsx` (lines 1, 9-14) for a cleaner final version.
+- [ ] Consider adding a functional updater example: `setCounter(prev => prev + 1)` to avoid stale closure issues when handlers are memoized or passed through layers.
+- [ ] Decide whether to add a third `CounterButton` in `App.tsx` for the shared-state examples, or add a note in the lesson explaining why only two are used.
+
+[↑ top - 034. Lesson 034 — *Sharing state between Components*](#-034-lesson-034--sharing-state-between-components)
+
 
 
 
