@@ -1,26 +1,23 @@
-import { useState } from "react";
+import { useRef, type FormEvent } from "react";
 
-import "./App.css";
-import CounterButton from "./components/CounterButton";
+const App = () => {
+  const inputRef = useRef<HTMLInputElement>(null);
 
-function App() {
-  const [counter, setCounter] = useState(0);
-
-  const handleClickIncrement = () => {
-    const newValue = counter + 1;
-    setCounter(newValue);
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    console.log("you process....");
+    console.log(inputRef.current?.value);
   };
 
   return (
-    <>
-      <h1>useState</h1>
-      <CounterButton counter={counter} handleClickIncrement={handleClickIncrement} /> {" "}
-      <CounterButton  
-        counter={counter}
-        handleClickIncrement={handleClickIncrement}
-      />
-    </>
+    <div>
+      <h1>Forms</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="text" ref={inputRef} name="user" />
+        <button type="submit">Submit</button>
+      </form>
+    </div>
   );
-}
+};
 
 export default App;

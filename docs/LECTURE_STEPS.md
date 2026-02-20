@@ -1044,6 +1044,206 @@ export default ControlledFormFull;
 [↑ top - 036. Lesson 036 — *Controlled vs Uncontrolled Forms*](#-036-lesson-036--controlled-vs-uncontrolled-forms)
 
 
+<br>
+
+## 🔧 037. Lesson 037 — *`useRef` hook*
+
+[🧳 Section 02: *Forms in React + TypeScript*](#-section-02-forms-in-react--typescript)
+
+### 📑 Table of Contents:
+- [037. Lesson 037 — *`useRef` hook*](#-037-lesson-037--useref-hook)
+- [037.1 Context](#-0371-context)
+- [037.2 Updating code/theory according the context](#️-0372-updating-codetheory-according-the-context)
+  - [037.2.1 Basic useRef setup — input ref without form](#-03721-basic-useref-setup--input-ref-without-form)
+  - [037.2.2 Adding form and submit button (default submission behaviour)](#-03722-adding-form-and-submit-button-default-submission-behaviour)
+  - [037.2.3 Adding name attribute — query params in URL](#-03723-adding-name-attribute--query-params-in-url)
+  - [037.2.4 Preventing default submission and reading value via ref](#-03724-preventing-default-submission-and-reading-value-via-ref)
+- [037.3 Issues](#-0373-issues)
+- [037.4 Pending Fixes (TODO)](#-0374-pending-fixes-todo)
+
+### 🧠 037.1 Context:
+
+`useRef` is a React Hook that lets you hold a **mutable reference** that persists across re-renders without triggering them. Unlike state, updating a ref does not cause a re-render — making it ideal for storing DOM node references, timers, or any value you need to mutate without affecting the UI.
+
+**Key Concepts:**
+
+1. **Mutable Object Reference** — `useRef(initialValue)` returns a mutable object `{ current: initialValue }`. You read and write `ref.current`; changes do not cause re-renders.
+2. **DOM Access** — Passing a ref to a JSX element via the `ref` prop gives you direct access to the DOM node. React assigns `ref.current` after the component mounts and clears it on unmount.
+3. **Typing in TypeScript** — For DOM elements, use `useRef<HTMLInputElement>(null)` so that `ref.current` is correctly typed and supports properties like `value`.
+4. **Optional Chaining** — When reading `ref.current?.value`, the `?.` operator safely handles the case where `ref.current` may be `null` (e.g. before mount or after unmount).
+5. **Uncontrolled Inputs** — In forms, `useRef` lets you read the input value only when needed (e.g. on submit) without binding `value` and `onChange` — the DOM owns the value.
+
+**Advantages:**
+- No re-renders when updating the ref — useful for storing values that do not affect the UI.
+- Direct DOM access for focus, scroll, measurement, or reading input values on demand.
+- Persists across re-renders without losing its value (unlike a local variable).
+- Lightweight — avoids the overhead of `useState` when you do not need reactivity.
+
+**Disadvantages / Gotchas:**
+- Mutating `ref.current` does **not** trigger a re-render — if the UI must reflect the value, use `useState`.
+- `ref.current` is `null` during the initial render and when the element is unmounted — always check before access.
+- Without TypeScript typing (`useRef(null)`), `ref.current` is inferred as `any` or a broad type.
+- Overusing refs for values that should drive the UI leads to bugs — prefer state for reactive data.
+
+**When to Consider Alternatives:**
+- For values that must trigger re-renders (e.g. form input display) → use `useState`.
+- For complex form logic, validation, or real-time feedback → prefer controlled components or React Hook Form.
+- For multiple form fields on submit → consider `FormData` with a form-level ref (as in Lesson 036).
+
+Reference: [Controlled vs Uncontrolled forms](https://bluuweb.dev/react-ts/02-fundamentos-react.html#formularios)
+
+In this project, `useRef` is demonstrated in `src/App.tsx` for an uncontrolled form input. The lesson progresses from a basic ref setup (037.2.1), through default form submission behaviour (037.2.2–037.2.3), to the final pattern where `e.preventDefault()` stops the reload and the input value is read via `inputRef.current?.value` (037.2.4).
+
+### ⚙️ 037.2 Updating code/theory according the context:
+
+#### **Summary**
+- This section introduces the `useRef` hook in the context of an uncontrolled form input.
+- Subsection 037.2.1 sets up the basic pattern: importing `useRef`, creating a ref, and attaching it to an input via the `ref` prop.
+- Subsection 037.2.2 wraps the input in a `<form>` with a submit button — without `onSubmit` handling, the form uses native behaviour and triggers a full page reload.
+- Subsection 037.2.3 adds the `name` attribute to the input; on native submit, the form serialises values as query params in the URL (illustrated by the screenshot).
+- Subsection 037.2.4 completes the pattern: `handleSubmit` with `e.preventDefault()` stops the reload, and `inputRef.current?.value` reads the input value for processing.
+
+#### 037.2.1 Basic useRef setup — input ref without form
+
+**Subsection Summary**
+- Imports `useRef` from React and creates `inputRef` with `useRef(null)`.
+- Attaches the ref to an input using the `ref` prop.
+- The input is uncontrolled — no `value` or `onChange`; the DOM owns the value.
+- Establishes the foundation for reading the input value later (e.g. on submit).
+
+```jsx
+/* src/App.tsx */
+import { useRef } from "react";                   // 👈🏽 ✅ (2)
+
+const App = () => {
+  const inputRef = useRef(null);                  // 👈🏽 ✅ (1)
+  return (
+    <div>
+      <h1>Forms</h1>
+      <input type="text" ref={inputRef} />        {/* 👈🏽 ✅ (3) */}
+    </div>
+  )
+}
+export default App;
+```
+
+#### 037.2.2 Adding form and submit button (default submission behaviour)
+
+**Subsection Summary**
+- Wraps the input in a `<form>` and adds a submit button.
+- Without an `onSubmit` handler, the form uses native HTML submission.
+- Clicking Submit causes a full page reload — the default browser behaviour.
+- The URL reflects the submission (e.g. `http://localhost:5173/`).
+
+```jsx
+/* src/App.tsx */
+import { useRef } from "react";
+
+const App = () => {
+  const inputRef = useRef(null);
+  return (
+    <div>
+      <h1>Forms</h1>
+      <form>                                          {/* 👈🏽 ✅ (1) */}
+        <input type="text" ref={inputRef} />
+        <button type="submit">Submit</button>         {/* 👈🏽 ✅ (2) */}
+      </form>
+    </div>
+  )
+}
+export default App;
+```
+
+* After clicking on `Submit` button, page reload again.
+* URL: ` http://localhost:5173/?`
+
+#### 037.2.3 Adding name attribute — query params in URL
+
+**Subsection Summary**
+- Adds the `name="user"` attribute to the input.
+- On native form submit, the browser serialises named inputs as query parameters.
+- The screenshot (`section02-lecture037-001.png`) illustrates the resulting URL with query params (e.g. `?user=...`).
+- Demonstrates how uncontrolled inputs participate in native form behaviour before `preventDefault` is used.
+
+```jsx
+/* src/App.tsx */
+import { useRef } from "react";
+const App = () => {
+  const inputRef = useRef(null);
+  return (
+    <div>
+      <h1>Forms</h1>
+      <form>
+        <input type="text" ref={inputRef} name="user" />        {/* 👈🏽 ✅ (1) adding "name='user'" */}
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  )
+}
+export default App;
+```
+
+![query params](../img/section02-lecture037-001.png)
+
+#### 037.2.4 Preventing default submission and reading value via ref
+
+**Subsection Summary**
+- Adds `handleSubmit` with `e.preventDefault()` to stop the native form submission and page reload.
+- Reads the input value via `inputRef.current?.value` using optional chaining.
+- Uses `useRef<HTMLInputElement>(null)` for correct TypeScript typing.
+- Imports `FormEvent` for proper event typing.
+- The form now behaves as a single-page app form: submit is handled in JavaScript, and the value is available for processing (e.g. logging or API calls).
+
+```jsx
+/* src/App.tsx */
+import { useRef, type FormEvent } from "react";
+
+const App = () => {
+  const inputRef = useRef<HTMLInputElement>(null);              // 👈🏽 ✅ (4)
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();                                         // 👈🏽 ✅ (1)
+    console.log("you process....");                             // 👈🏽 ✅ (2)
+    console.log(inputRef.current?.value);                       // 👈🏽 ✅ (3)
+  };
+
+  return (
+    <div>
+      <h1>Forms</h1>
+      <form onSubmit={handleSubmit}>
+        <input type="text" ref={inputRef} name="user" />
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  )
+}
+export default App;
+```
+
+### 🐞 037.3 Issues:
+
+- **Missing TypeScript typing in early examples**: Subsections 037.2.1–037.2.3 use `useRef(null)` without the generic type parameter. This results in `ref.current` being typed as `any` or `null`, reducing type safety when accessing `value`.
+- **Inconsistent App structure across subsections**: The lesson shows incremental changes in `src/App.tsx`, but the final project has only the 037.2.4 version. Earlier subsections (037.2.1–037.2.3) are pedagogical snapshots, not separate implementations.
+- **No accessibility attributes on form**: The form and input lack `aria-label`, `htmlFor`/`id` for labels, and `aria-describedby` for helper text. This may affect screen reader users.
+- **Duplicate `name` attribute**: The `name="user"` attribute becomes redundant when using `useRef` to read the value directly — it is only relevant for native form submission or `FormData`. The lesson could clarify this.
+
+| Issue | Status | Log/Error |
+|---|---|---|
+| Missing generic type in useRef (early examples) | ⚠️ Identified | `docs/LECTURE_STEPS.md` — 037.2.1–037.2.3 show `useRef(null)` instead of `useRef<HTMLInputElement>(null)`. |
+| Incremental examples vs single final file | ℹ️ Informational | Lesson 037 — subsections 037.2.1–037.2.4 are step-by-step; only the final state exists in `src/App.tsx`. |
+| Missing form accessibility | ℹ️ Low Priority | `src/App.tsx` — form/input lack `aria-label`, `htmlFor`, or visible label for screen readers. |
+| Redundant name attribute with useRef | ℹ️ Informational | `src/App.tsx:17` — `name="user"` is not used when reading via `inputRef.current?.value`; useful for FormData or native submit only. |
+
+### 🧱 037.4 Pending Fixes (TODO)
+
+- [ ] Update subsections 037.2.1–037.2.3 in `docs/LECTURE_STEPS.md` to use `useRef<HTMLInputElement>(null)` for consistency with 037.2.4.
+- [ ] Add a visible `<label>` with `htmlFor` and matching `id` on the input in `src/App.tsx` for accessibility.
+- [ ] Add a short note in 037.2.3 or 037.2.4 explaining when `name` is needed (FormData, native submit) vs when ref access alone suffices.
+- [ ] Consider extracting the uncontrolled form into a dedicated component (e.g. `UncontrolledForm.tsx`) to align with Lesson 036 patterns and improve reusability.
+
+[↑ top - 037. Lesson 037 — *`useRef` hook*](#-037-lesson-037--useref-hook)
+
+
 
 
 
