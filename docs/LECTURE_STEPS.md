@@ -740,9 +740,308 @@ export default CounterButton;
 [↑ top - 034. Lesson 034 — *Sharing state between Components*](#-034-lesson-034--sharing-state-between-components)
 
 
+## 🧳 Section 02: *Forms in React + TypeScript*
 
+<br>
 
+## 🔧 036. Lesson 036 — *Controlled vs Uncontrolled Forms*
 
+[🧳 Section 02: *Forms in React + TypeScript*](#-section-02-forms-in-react--typescript)
+
+### 📑 Table of Contents:
+- [036. Lesson 036 — *Controlled vs Uncontrolled Forms*](#-036-lesson-036--controlled-vs-uncontrolled-forms)
+- [036.1 Context](#-0361-context)
+- [036.2 Updating code/theory according the context](#️-0362-updating-codetheory-according-the-context)
+  - [036.2.1 Uncontrolled form with useRef](#-03621-uncontrolled-form-with-useref)
+  - [036.2.2 Uncontrolled form with FormData](#-03622-uncontrolled-form-with-formdata)
+  - [036.2.3 Basic controlled input](#-03623-basic-controlled-input)
+  - [036.2.4 Controlled form with onSubmit](#-03624-controlled-form-with-onsubmit)
+  - [036.2.5 Full controlled form — text, select, checkbox](#-03625-full-controlled-form--text-select-checkbox)
+- [036.3 Issues](#-0363-issues)
+- [036.4 Pending Fixes (TODO)](#-0364-pending-fixes-todo)
+
+### 🧠 036.1 Context:
+
+In React, form inputs can be handled in two ways: **controlled** or **uncontrolled**. Understanding both patterns is essential for choosing the right approach for validation, real-time feedback, and integration with React state.
+
+**Key Concepts:**
+
+1. **Controlled components** — The input value is stored in React state and bound via `value` (or `checked` for checkboxes). Every keystroke updates the state via `onChange`, and the input displays the state value. React is the *single source of truth*.
+2. **Uncontrolled components** — The DOM owns the input value. You read it when needed (e.g. on submit) via `useRef` or `FormData`. No `value` prop is passed; the input is "uncontrolled" by React.
+3. **`useRef` and DOM access** — `useRef<HTMLInputElement>(null)` gives a reference to the DOM node. After render, `ref.current` points to the element, so you can read `ref.current?.value` without triggering re-renders.
+4. **`FormData`** — A native Web API constructor that builds key/value pairs from form elements. Use `new FormData(formRef.current)` and `formData.get("fieldName")` to read values. Works best with `name` attributes.
+5. **`value` vs `defaultValue`** — In controlled mode you use `value={state}`; in uncontrolled mode you may use `defaultValue` for initial value only. Mixing `value` without `onChange` (or vice versa) leads to a read-only or broken input.
+
+**Advantages:**
+- **Controlled**: Predictable state, easy validation, real-time UI feedback, and full control over input behaviour.
+- **Uncontrolled**: Fewer re-renders, less boilerplate, simple for one-off forms, and closer to traditional HTML form behaviour.
+
+**Disadvantages / Gotchas:**
+- **Controlled**: More state and handlers; each keystroke causes a re-render.
+- **Uncontrolled**: Validation and feedback require reading DOM or FormData; harder to reset or programmatically change values.
+- Passing `value` without `onChange` (or the inverse) can make an input read-only or throw React warnings.
+- Checkboxes use `checked` and `e.target.checked`, not `value`.
+
+**When to Consider Alternatives:**
+- Complex forms with many fields and validation → React Hook Form, Formik, or TanStack Form.
+- When you need to avoid re-renders on every keystroke → uncontrolled with `FormData` or `useRef`.
+- When integrating with non-React code (e.g. legacy libs) → uncontrolled may be simpler.
+
+Reference: [Controlled vs Uncontrolled Forms (bluuweb)](https://bluuweb.dev/react-ts/02-fundamentos-react.html#formularios) and [React: Controlling an input with a state variable](https://react.dev/reference/react-dom/components/input#controlling-an-input-with-a-state-variable).
+
+### ⚙️ 036.2 Updating code/theory according the context:
+
+#### **Summary**
+- This section covers both uncontrolled and controlled form patterns in React with TypeScript.
+- Subsection 036.2.1 shows an uncontrolled form using `useRef` to read a single input value on submit.
+- Subsection 036.2.2 demonstrates an uncontrolled form with multiple fields (text, select, checkbox) using `FormData`.
+- Subsection 036.2.3 introduces the basic controlled pattern: `useState` + `value` + `onChange` for a single input.
+- Subsection 036.2.4 adds `onSubmit` to handle form submission in a controlled form.
+- Subsection 036.2.5 shows a full controlled form (username, color select, checkbox) as the equivalent of the uncontrolled example from 036.2.2.
+
+#### 036.2.1 Uncontrolled form with useRef
+
+**Subsection Summary**
+- Uses `useRef<HTMLInputElement>(null)` to keep a reference to the input without causing re-renders.
+- Reads the value only on submit via `inputRef.current?.value`.
+- The input has no `value` or `onChange` props; the DOM owns the value.
+- Calls `e.preventDefault()` to avoid default form submission and page reload.
+
+```jsx
+/* src/components/UncontrolledForm.tsx */
+import { useRef, type FormEvent } from "react";
+
+const UncontrolledForm = () => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    console.log(inputRef.current?.value); // Optional Chaining Operator
+  };
+
+  return (
+    <div>
+      <h2>Uncontrolled (useRef)</h2>
+      <form onSubmit={handleSubmit}>
+        <input type="text" ref={inputRef} />
+        <button type="submit">Agregar</button>
+      </form>
+    </div>
+  );
+};
+
+export default UncontrolledForm;
+```
+
+#### 036.2.2 Uncontrolled form with FormData
+
+**Subsection Summary**
+- Uses `useRef<HTMLFormElement>(null)` to reference the whole form.
+- On submit, builds a `FormData` from the form DOM element.
+- Reads values with `formData.get("fieldName")` — each input must have a `name` attribute.
+- Checkboxes: unchecked → `null`; checked → `"on"` (or custom `value`). Use `!!formData.get("accept")` to convert to boolean.
+- `select` uses `defaultValue` for initial selection (uncontrolled).
+
+```jsx
+/* src/components/UncontrolledFormData.tsx */
+import { useRef, type FormEvent } from "react";
+
+const UncontrolledFormData = () => {
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!formRef.current) return;
+
+    const formData = new FormData(formRef.current);
+    const username = formData.get("username");
+    const color = formData.get("color");
+    const accept = !!formData.get("accept");
+
+    console.log({ username, color, accept });
+  };
+
+  return (
+    <div>
+      <h2>Uncontrolled (FormData)</h2>
+      <form onSubmit={handleSubmit} ref={formRef}>
+        <input type="text" name="username" placeholder="Your username" />
+        <br />
+        <select name="color" defaultValue="">
+          <option value="" disabled>Choose a color</option>
+          <option value="red">Red</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+        </select>
+        <br />
+        <label>
+          <input type="checkbox" name="accept" />
+          I accept the terms
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  );
+};
+
+export default UncontrolledFormData;
+```
+
+#### 036.2.3 Basic controlled input
+
+**Subsection Summary**
+- Introduces the controlled pattern: `value={text}` and `onChange={(e) => setText(e.target.value)}`.
+- The input displays exactly what is in state; state updates on every keystroke.
+- Renders the current value below the input for real-time feedback.
+- React is the single source of truth for the input value.
+
+```jsx
+/* src/components/ControlledForm.tsx */
+import { useState } from "react";
+
+const ControlledForm = () => {
+  const [text, setText] = useState("");
+
+  return (
+    <div>
+      <h2>Controlled (basic)</h2>
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <p>{text}</p>
+    </div>
+  );
+};
+
+export default ControlledForm;
+```
+
+#### 036.2.4 Controlled form with onSubmit
+
+**Subsection Summary**
+- Extends the controlled input with a `<form>` and `onSubmit` handler.
+- `e.preventDefault()` stops the default form submission and page reload.
+- The input value is already in state, so no DOM access is needed on submit.
+- The submitted value is echoed in an `<h2>` for visual confirmation.
+
+```jsx
+/* src/components/ControlledForm.tsx */
+import { useState, type FormEvent } from "react";
+
+const ControlledForm = () => {
+  const [text, setText] = useState("");
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    console.log(text);
+  };
+
+  return (
+    <div>
+      <h2>Controlled (with onSubmit)</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <button type="submit">Agregar</button>
+      </form>
+      <h3>{text}</h3>
+    </div>
+  );
+};
+
+export default ControlledForm;
+```
+
+#### 036.2.5 Full controlled form — text, select, checkbox
+
+**Subsection Summary**
+- Shows the controlled equivalent of the FormData example: username, color select, and accept checkbox.
+- Each field uses `useState` and is bound with `value`/`checked` and `onChange`.
+- Checkbox uses `checked={accept}` and `onChange={(e) => setAccept(e.target.checked)}` instead of `value`.
+- Select uses `value={color}` and `onChange`; options include a disabled empty option for initial state.
+- All values are available in state for validation and submission without DOM access.
+
+```jsx
+/* src/components/ControlledFormFull.tsx */
+import { useState, type FormEvent } from "react";
+
+const ControlledFormFull = () => {
+  const [username, setUsername] = useState("");
+  const [color, setColor] = useState("");
+  const [accept, setAccept] = useState(false);
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    console.log({ username, color, accept });
+  };
+
+  return (
+    <div>
+      <h2>Controlled (full form)</h2>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Your username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <br />
+        <select
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+        >
+          <option value="" disabled>Choose a color</option>
+          <option value="red">Red</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+        </select>
+        <br />
+        <label>
+          <input
+            type="checkbox"
+            checked={accept}
+            onChange={(e) => setAccept(e.target.checked)}
+          />
+          I accept the terms
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+  );
+};
+
+export default ControlledFormFull;
+```
+
+### 🐞 036.3 Issues:
+
+- **Form components not yet implemented**: The project does not contain `UncontrolledForm`, `UncontrolledFormData`, `ControlledForm`, or `ControlledFormFull` components. The lesson documents the patterns but no corresponding code exists in `src/components/`.
+- **No App entry point for forms**: `src/App.tsx` currently renders `CounterButton`; there is no route or section to display the form examples from Section 02.
+- **Typo in external reference**: The bluuweb link text previously read "Uncontrold" instead of "Uncontrolled".
+- **Accessibility considerations**: Form examples omit `htmlFor`/`id` for labels, `aria-label` for inputs without visible labels, and `aria-invalid`/`aria-describedby` for validation feedback.
+
+| Issue | Status | Log/Error |
+|---|---|---|
+| Form components missing | ⚠️ Identified | `src/components/` — `UncontrolledForm.tsx`, `UncontrolledFormData.tsx`, `ControlledForm.tsx`, `ControlledFormFull.tsx` are referenced in the lesson but do not exist. |
+| No forms in App | ⚠️ Identified | `src/App.tsx` — Only renders Section 01 components; no integration point for Section 02 form examples. |
+| Link text typo "Uncontrold" | ✅ Fixed | `docs/LECTURE_STEPS.md` — Corrected to "Uncontrolled" in reference link. |
+| Missing form accessibility attributes | ℹ️ Low Priority | Lesson 036 code examples — Labels lack `htmlFor`/`id`; no `aria-invalid` or `aria-describedby` for validation. |
+
+### 🧱 036.4 Pending Fixes (TODO)
+
+- [ ] Create `src/components/UncontrolledForm.tsx` implementing the useRef pattern from subsection 036.2.1.
+- [ ] Create `src/components/UncontrolledFormData.tsx` implementing the FormData pattern from subsection 036.2.2.
+- [ ] Create `src/components/ControlledForm.tsx` (or a combined component) implementing subsections 036.2.3 and 036.2.4.
+- [ ] Create `src/components/ControlledFormFull.tsx` implementing the full controlled form from subsection 036.2.5.
+- [ ] Update `src/App.tsx` to include a Section 02 demo area (e.g. conditional render or tab) that showcases the form components.
+- [ ] Add accessibility attributes to form examples: `htmlFor`/`id` on labels, `aria-label` where appropriate, `aria-invalid`/`aria-describedby` for validation states.
+
+[↑ top - 036. Lesson 036 — *Controlled vs Uncontrolled Forms*](#-036-lesson-036--controlled-vs-uncontrolled-forms)
 
 
 
